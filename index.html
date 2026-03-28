@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Converter - Premium Document Tools</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Cropper.js CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+    <!-- App Styles -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-background"></div>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar glass">
+            <div class="logo">
+                <div class="logo-icon-bg"><i class="fa-solid fa-layer-group"></i></div>
+                <h2>All Converter</h2>
+            </div>
+            <ul class="nav-links">
+                <li class="active" data-tab="tab-img-to-pdf">
+                    <i class="fa-solid fa-file-image"></i>
+                    <span>Image to PDF</span>
+                </li>
+                <li data-tab="tab-pdf-to-img">
+                    <i class="fa-solid fa-file-pdf"></i>
+                    <span>PDF to Image</span>
+                </li>
+                <li data-tab="tab-camera-pdf">
+                    <i class="fa-solid fa-camera"></i>
+                    <span>Camera PDF</span>
+                </li>
+                <li data-tab="tab-create-pdf">
+                    <i class="fa-solid fa-folder-plus"></i>
+                    <span>Create PDF</span>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Tab: Image to PDF -->
+            <section id="tab-img-to-pdf" class="tab-pane active glass-pane">
+                <header class="tab-header">
+                    <h1>Image to PDF</h1>
+                    <p>Convert multiple images into a beautifully formatted PDF document.</p>
+                </header>
+                <div class="content-body">
+                    <div class="upload-zone" id="img-to-pdf-upload">
+                        <div class="upload-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                        <p>Drag & drop images here or <strong>browse files</strong></p>
+                        <input type="file" id="img-to-pdf-input" multiple accept="image/*" hidden>
+                    </div>
+                    
+                    <div class="action-bar hidden" id="img-to-pdf-actions">
+                        <span class="file-count"><span id="img-to-pdf-count">0</span> files loaded</span>
+                        <div class="action-buttons">
+                            <button class="btn btn-secondary btn-clear">
+                                <i class="fa-solid fa-trash"></i> Clear All
+                            </button>
+                            <button class="btn btn-primary" id="btn-generate-img-to-pdf">
+                                <i class="fa-solid fa-file-export"></i> Convert to PDF
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="items-grid" id="img-to-pdf-grid"></div>
+                </div>
+            </section>
+
+            <!-- Tab: PDF to Image -->
+            <section id="tab-pdf-to-img" class="tab-pane hidden glass-pane">
+                <header class="tab-header">
+                    <h1>PDF to Image</h1>
+                    <p>Extract high-resolution images from any PDF file.</p>
+                </header>
+                <div class="content-body">
+                    <div class="upload-zone" id="pdf-to-img-upload">
+                        <div class="upload-icon"><i class="fa-solid fa-file-pdf"></i></div>
+                        <p>Drag & drop a PDF here or <strong>browse files</strong></p>
+                        <input type="file" id="pdf-to-img-input" accept="application/pdf" hidden>
+                    </div>
+                    <div class="action-bar hidden" id="pdf-to-img-actions">
+                        <span class="file-count"><span id="pdf-to-img-count">0</span> pages extracted</span>
+                        <div class="action-buttons">
+                            <button class="btn btn-secondary btn-clear">
+                                <i class="fa-solid fa-trash"></i> Clear PDF
+                            </button>
+                            <button class="btn btn-primary" id="btn-export-pdf-images">
+                                <i class="fa-solid fa-download"></i> Download All as ZIP
+                            </button>
+                        </div>
+                    </div>
+                    <div class="items-grid" id="pdf-to-img-grid"></div>
+                </div>
+            </section>
+
+            <!-- Tab: Camera PDF -->
+            <section id="tab-camera-pdf" class="tab-pane hidden glass-pane">
+                <header class="tab-header">
+                    <h1>Capture Camera PDF</h1>
+                    <p>Scan documents directly from your device camera.</p>
+                </header>
+                <div class="content-body camera-app">
+                    <div class="camera-container">
+                        <div class="camera-view" id="camera-view">
+                            <video id="camera-video" autoplay playsinline></video>
+                            <div class="scanning-overlay hidden">Scanning...</div>
+                        </div>
+                        <div class="camera-controls">
+                            <button class="btn btn-secondary" id="btn-switch-camera">
+                                <i class="fa-solid fa-rotate"></i> Switch Camera
+                            </button>
+                            <button class="btn btn-capture-main" id="btn-capture">
+                                <div class="inner-circle"></div>
+                            </button>
+                            <button class="btn btn-secondary btn-start-camera" id="btn-start-camera">
+                                <i class="fa-solid fa-video"></i> Start Camera
+                            </button>
+                        </div>
+                    </div>
+                    <div class="action-bar hidden" id="camera-actions">
+                        <span class="file-count"><span id="camera-count">0</span> captures</span>
+                        <div class="action-buttons">
+                            <button class="btn btn-secondary btn-clear">
+                                <i class="fa-solid fa-trash"></i> Discard All
+                            </button>
+                            <button class="btn btn-primary" id="btn-generate-camera-pdf">
+                                <i class="fa-solid fa-file-export"></i> Save as PDF
+                            </button>
+                        </div>
+                    </div>
+                    <div class="items-grid" id="camera-grid"></div>
+                </div>
+            </section>
+
+            <!-- Tab: Create PDF (Advanced) -->
+            <section id="tab-create-pdf" class="tab-pane hidden glass-pane">
+                <header class="tab-header">
+                    <h1>Advanced PDF Builder</h1>
+                    <p>Mix images & PDFs, reorder dynamically, edit pages, and compile a master PDF.</p>
+                </header>
+                <div class="content-body">
+                    <div class="upload-zone row-layout" id="create-pdf-upload">
+                        <div class="upload-info">
+                            <div class="upload-icon small"><i class="fa-solid fa-layer-group"></i></div>
+                            <div>
+                                <h3>Add Media</h3>
+                                <p>Drag & drop or click to add images and PDFs</p>
+                            </div>
+                        </div>
+                        <input type="file" id="create-pdf-input" multiple accept="image/*,application/pdf" hidden>
+                        <button class="btn btn-primary btn-outline" onclick="document.getElementById('create-pdf-input').click()">
+                            <i class="fa-solid fa-plus"></i> Browse
+                        </button>
+                    </div>
+                    <div class="action-bar hidden" id="create-pdf-actions">
+                        <div class="pagination-info">
+                            Pages: <strong><span id="total-pages-display">0</span></strong>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-secondary btn-clear">
+                                <i class="fa-solid fa-trash"></i> Clear Assembly
+                            </button>
+                            <button class="btn btn-primary" id="btn-generate-create-pdf">
+                                <i class="fa-solid fa-file-export"></i> Compile Master PDF
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Interactive list/grid with SortableJS -->
+                    <div class="items-grid sortable-grid" id="create-pdf-grid"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Global Image Editor Modal -->
+    <div id="editor-modal" class="modal-overlay hidden">
+        <div class="modal-content glass-pane">
+            <div class="modal-header">
+                <h2>Photo & Document Editor</h2>
+                <button class="btn-close" id="btn-close-editor"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="editor-layout">
+                <div class="editor-canvas-container">
+                    <div class="canvas-wrapper">
+                        <!-- Used for Cropper.js -->
+                        <img id="editor-image-preview" src="">
+                    </div>
+                </div>
+                <div class="editor-sidebar glass">
+                    <div class="editor-tabs">
+                        <button class="editor-tab active" data-target="adjust">Adjust</button>
+                        <button class="editor-tab" data-target="crop">Crop</button>
+                        <button class="editor-tab" data-target="text">Text</button>
+                    </div>
+                    
+                    <div class="editor-tab-content active" id="editor-panel-adjust">
+                        <div class="control-group">
+                            <div class="flex-between">
+                                <label>Brightness</label>
+                                <span id="val-brightness">100%</span>
+                            </div>
+                            <input type="range" id="filter-brightness" min="0" max="200" value="100">
+                        </div>
+                        <div class="control-group">
+                            <div class="flex-between">
+                                <label>Contrast</label>
+                                <span id="val-contrast">100%</span>
+                            </div>
+                            <input type="range" id="filter-contrast" min="0" max="200" value="100">
+                        </div>
+                        <div class="control-group">
+                            <div class="flex-between">
+                                <label>Grayscale (Scan Mode)</label>
+                                <span id="val-grayscale">0%</span>
+                            </div>
+                            <input type="range" id="filter-grayscale" min="0" max="100" value="0">
+                        </div>
+                        <button class="btn btn-secondary full-width mt-2" id="btn-reset-filters">Reset Filters</button>
+                    </div>
+
+                    <div class="editor-tab-content hidden" id="editor-panel-crop">
+                        <p class="help-text">Select an aspect ratio or crop freely.</p>
+                        <div class="crop-ratios">
+                            <button class="ratio-btn" data-ratio="NaN">Free</button>
+                            <button class="ratio-btn" data-ratio="1">1:1</button>
+                            <button class="ratio-btn" data-ratio="1.33333">4:3</button>
+                            <button class="ratio-btn" data-ratio="1.77777">16:9</button>
+                            <button class="ratio-btn" data-ratio="0.707">A4</button>
+                        </div>
+                        <button class="btn btn-primary full-width mt-2" id="btn-apply-crop">Apply Crop</button>
+                    </div>
+
+                    <div class="editor-tab-content hidden" id="editor-panel-text">
+                        <div class="text-tools">
+                            <input type="text" id="text-input" class="full-width" placeholder="Enter text to overlay...">
+                            <div class="color-pickers mt-2">
+                                <div class="color-field">
+                                    <label>Text</label>
+                                    <input type="color" id="text-color" value="#000000">
+                                </div>
+                                <div class="color-field">
+                                    <label>Background</label>
+                                    <input type="color" id="text-bg-color" value="#ffffff">
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary full-width mt-2" id="btn-add-text"><i class="fa-solid fa-plus"></i> Add Text Box</button>
+                        </div>
+                        
+                        <div class="added-texts mt-2">
+                            <h4>Active Text Elements</h4>
+                            <div id="text-elements-list" class="text-elements-list"></div>
+                        </div>
+                        <p class="help-text note">* Text can be positioned by dragging.</p>
+                    </div>
+
+                    <div class="editor-actions">
+                        <button class="btn btn-secondary" id="btn-cancel-edit">Cancel</button>
+                        <button class="btn btn-primary" id="btn-save-edit">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Replace Page Modal -->
+    <div id="replace-modal" class="modal-overlay hidden">
+        <div class="modal-content glass-pane small-modal">
+            <div class="modal-header">
+                <h2>Replace Page</h2>
+                <button class="btn-close" id="btn-close-replace"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="upload-zone small" id="replace-upload">
+                <i class="fa-solid fa-file-import"></i>
+                <p>Click to upload a new Image or PDF</p>
+                <input type="file" id="replace-input" accept="image/*,application/pdf" hidden>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Canvas for Processing -->
+    <div id="hidden-workspace" style="display:none;"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+        <h3 id="loading-message">Processing...</h3>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
+    <!-- App Logic -->
+    <script src="app.js"></script>
+</body>
+</html>
