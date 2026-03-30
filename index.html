@@ -20,11 +20,10 @@
     <div class="app-container">
         <!-- Sidebar Navigation -->
         <nav class="sidebar glass">
-            <div class="logo">
+            <div class="logo"></div>
                 <div class="logo-icon-bg"><i class="fa-solid fa-layer-group"></i></div>
                 <h2>All Converter</h2>
-            </div>
-            <ul class="nav-links">
+                        <ul class="nav-links">
                 <li class="active" data-tab="tab-img-to-pdf">
                     <i class="fa-solid fa-file-image"></i>
                     <span>Image to PDF</span>
@@ -103,41 +102,70 @@
             </section>
 
             <!-- Tab: Camera PDF -->
-            <section id="tab-camera-pdf" class="tab-pane hidden glass-pane">
-                <header class="tab-header">
-                    <h1>Capture Camera PDF</h1>
-                    <p>Scan documents directly from your device camera.</p>
+            <section id="tab-camera-pdf" class="tab-pane hidden glass-pane camera-scanner-layout">
+                <header class="tab-header scanner-header">
+                    <h1>Camera to PDF Converter</h1>
+                    <p>Live document edge detection & perspective crop.</p>
                 </header>
-                <div class="content-body camera-app">
-                    <div class="camera-container">
-                        <div class="camera-view" id="camera-view">
-                            <video id="camera-video" autoplay playsinline></video>
-                            <div class="scanning-overlay hidden">Scanning...</div>
-                        </div>
-                        <div class="camera-controls">
-                            <button class="btn btn-secondary" id="btn-switch-camera">
-                                <i class="fa-solid fa-rotate"></i> Switch Camera
-                            </button>
-                            <button class="btn btn-capture-main" id="btn-capture">
-                                <div class="inner-circle"></div>
-                            </button>
-                            <button class="btn btn-secondary btn-start-camera" id="btn-start-camera">
-                                <i class="fa-solid fa-video"></i> Start Camera
-                            </button>
-                        </div>
+                
+                <div class="scanner-main-area" id="scanner-main-area">
+                    <!-- Live feed from camera -->
+                    <video id="scanner-video" autoplay playsinline class="hidden"></video>
+                    <!-- Displayed output (original feed/image + overlay lines here) -->
+                    <canvas id="scanner-canvas"></canvas>
+                    
+                    <!-- 4-point crop handles container -->
+                    <div id="scanner-crop-ui" class="hidden">
+                        <svg id="scanner-crop-poly" width="100%" height="100%" style="position: absolute; top:0; left:0; pointer-events:none;">
+                            <polygon points="0,0 0,0 0,0 0,0" fill="rgba(99, 102, 241, 0.2)" stroke="var(--primary)" stroke-width="2"/>
+                        </svg>
+                        <div class="crop-point" data-corner="0"></div>
+                        <div class="crop-point" data-corner="1"></div>
+                        <div class="crop-point" data-corner="2"></div>
+                        <div class="crop-point" data-corner="3"></div>
                     </div>
-                    <div class="action-bar hidden" id="camera-actions">
-                        <span class="file-count"><span id="camera-count">0</span> captures</span>
-                        <div class="action-buttons">
-                            <button class="btn btn-secondary btn-clear">
-                                <i class="fa-solid fa-trash"></i> Discard All
-                            </button>
-                            <button class="btn btn-primary" id="btn-generate-camera-pdf">
-                                <i class="fa-solid fa-file-export"></i> Save as PDF
-                            </button>
-                        </div>
+
+                    <div class="scanner-status" id="scanner-status">Loading OpenCV...</div>
+                </div>
+
+                <div class="scanner-toolbar glass">
+                    <div class="toolbar-group">
+                        <input type="file" id="scanner-gallery-input" accept="image/*" hidden>
+                        <button class="btn-icon" id="btn-scanner-gallery" title="Gallery Import"><i class="fa-solid fa-image"></i></button>
+                        <button class="btn-icon" id="btn-scanner-start" title="Open Camera"><i class="fa-solid fa-camera"></i></button>
+                        <button class="btn-icon" id="btn-scanner-switch" title="Flip Camera"><i class="fa-solid fa-rotate-right"></i></button>
+                        <button class="btn-icon" id="btn-scanner-light" title="Toggle Flash/Torch"><i class="fa-solid fa-bolt"></i></button>
                     </div>
-                    <div class="items-grid" id="camera-grid"></div>
+                    
+                    <button class="btn-capture-main" id="btn-scanner-capture" title="Capture & Auto-Crop">
+                        <div class="inner-circle"></div>
+                    </button>
+                    
+                    <div class="toolbar-group edit-group" id="scanner-edit-group">
+                        <button class="btn-icon" id="btn-scanner-re-crop" title="Manual Crop Adjust"><i class="fa-solid fa-crop"></i></button>
+                        
+                        <div class="slider-popover-wrapper" id="scanner-sliders">
+                            <i class="fa-solid fa-sliders slider-icon" title="Adjustments" id="btn-scanner-sliders"></i>
+                            <div class="sliders-popup hidden glass" id="scanner-sliders-popup">
+                                <label><i class="fa-solid fa-sun"></i> Brght <input type="range" id="scanner-brightness" min="-100" max="100" value="0"></label>
+                                <label><i class="fa-solid fa-circle-half-stroke"></i> Cont <input type="range" id="scanner-contrast" min="0" max="200" value="100"></label>
+                                <label><i class="fa-solid fa-moon"></i> Dark <input type="range" id="scanner-darkness" min="0" max="100" value="0"></label>
+                            </div>
+                        </div>
+
+                        <button class="btn-icon" id="btn-scanner-rot-left" title="Rotate Left"><i class="fa-solid fa-rotate-left"></i></button>
+                        <button class="btn-icon" id="btn-scanner-rot-right" title="Rotate Right"><i class="fa-solid fa-rotate-right"></i></button>
+                    </div>
+                </div>
+
+                <div class="scanner-footer glass">
+                    <div class="scanner-thumbnails" id="scanner-thumbnails-strip">
+                        <!-- Thumbnails added here dynamically -->
+                    </div>
+                    <div class="scanner-actions">
+                        <button class="btn btn-secondary" id="btn-scanner-add-page" disabled><i class="fa-solid fa-plus"></i> Add Page</button>
+                        <button class="btn btn-primary" id="btn-scanner-save-pdf" disabled><i class="fa-solid fa-file-pdf"></i> Save PDF (<span id="scanner-page-count">0</span>)</button>
+                    </div>
                 </div>
             </section>
 
@@ -296,6 +324,7 @@
     </div>
 
     <!-- Scripts -->
+    <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="window.onOpenCvReadyCallback && window.onOpenCvReadyCallback();" type="text/javascript"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
