@@ -30,6 +30,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // Fix race condition if OpenCV loaded before this script
+    if (typeof cv !== 'undefined' && typeof cv.Mat !== 'undefined') {
+        window.onOpenCvReadyCallback();
+    }
+
     /* === Utility Functions === */
     const generateId = () => Math.random().toString(36).substr(2, 9);
     
@@ -743,7 +748,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const gridsToMakeSortable = [
         { key: 'imgToPdf', grid: imgToPdfGrid, actions: imgToPdfActions },
         { key: 'pdfToImg', grid: pdfToImgGrid, actions: pdfToImgActions },
-        { key: 'cameraPdf', grid: cameraGrid, actions: cameraActions },
         { key: 'createPdf', grid: createPdfGrid, actions: createPdfActions }
     ];
 
