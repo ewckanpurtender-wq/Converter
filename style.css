@@ -728,7 +728,8 @@ input[type="color"] {
 #scanner-canvas {
     max-width: 100%;
     max-height: 100%;
-    object-fit: contain;
+    width: auto;
+    height: auto;
 }
 
 #scanner-crop-ui {
@@ -946,4 +947,94 @@ input[type="color"] {
 
 ::-webkit-scrollbar-thumb:hover {
     background: rgba(255,255,255,0.4);
+}
+
+/* Mobile Support */
+@media (max-width: 768px) {
+    .app-container {
+        flex-direction: column;
+        padding: 0;
+        gap: 0;
+    }
+    .sidebar {
+        width: 100%;
+        flex-direction: row;
+        overflow-x: auto;
+        padding: 0.5rem;
+        border-radius: 0;
+        justify-content: space-between;
+        z-index: 10;
+        border-bottom: 1px solid var(--glass-border);
+    }
+    .logo {
+        margin-bottom: 0;
+        margin-right: 1rem;
+    }
+    .logo-icon-bg {
+        width: 40px;
+        height: 40px;
+        font-size: 0.8rem;
+    }
+    .logo h2 {
+        display: none;
+    }
+    .nav-links {
+        flex-direction: row;
+        gap: 0.5rem;
+        flex: 1;
+    }
+    .nav-links li {
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
+    }
+    .nav-links li span {
+        display: none; /* Icon only on very small screens */
+    }
+    .tab-pane {
+        padding: 1rem;
+    }
+    .scanner-main-area {
+        margin: 0;
+        border-radius: 0;
+    }
+    .scanner-header {
+        padding: 1rem 1rem 0;
+    }
+    .scanner-toolbar {
+        margin: 1rem 0 0;
+        padding: 0.5rem 1rem;
+        border-radius: 0;
+    }
+    .scanner-footer {
+        margin: 1rem 0;
+        flex-direction: column;
+        gap: 1rem;
+        border-radius: 0;
+    }
+    .action-bar {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    .upload-zone.row-layout {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+        text-align: center;
+    }
+    .upload-info {
+        flex-direction: column;
+    }
+    .modal-content {
+        padding: 1rem;
+    }
+    .editor-layout {
+        flex-direction: column;
+    }
+    .editor-sidebar {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid var(--glass-border);
+        max-height: 40vh;
+    }
 }

@@ -228,6 +228,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const sBrightness = document.getElementById('scanner-brightness');
     const sContrast = document.getElementById('scanner-contrast');
     const sDarkness = document.getElementById('scanner-darkness');
+    const sSharpness = document.getElementById('scanner-sharpness');
+    const btnScannerText = document.getElementById('btn-scanner-text');
+    const scannerTextLayer = document.getElementById('scanner-text-layer');
     const btnScannerRotLeft = document.getElementById('btn-scanner-rot-left');
     const btnScannerRotRight = document.getElementById('btn-scanner-rot-right');
 
@@ -241,7 +244,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let scanLoopId = null;
     let rawCorners = null; 
     let scanMode = 'none'; // 'video', 'crop', 'preview'
-    let fullResCanvas = document.createElement('canvas'); // Keep raw image
+    let fullResCanvas = document.createElement('canvas'); // Current cropped image
+    let originalCaptureCanvas = document.createElement('canvas'); // Keep raw uncropped image
     let currentItem = null; // { filters, rotation }
     
     let draggingPoint = null;
@@ -315,6 +319,10 @@ document.addEventListener('DOMContentLoaded', () => {
             fullResCanvas.width = img.width;
             fullResCanvas.height = img.height;
             fullResCanvas.getContext('2d').drawImage(img, 0, 0);
+            
+            originalCaptureCanvas.width = img.width;
+            originalCaptureCanvas.height = img.height;
+            originalCaptureCanvas.getContext('2d').drawImage(img, 0, 0);
             
             scanMode = 'preview';
             detectAndCropFromCanvas(); // Auto detect on gallery image
@@ -392,6 +400,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 fullResCanvas.width = scannerVideo.videoWidth;
                 fullResCanvas.height = scannerVideo.videoHeight;
                 fullResCanvas.getContext('2d').drawImage(scannerVideo, 0, 0);
+                
+                originalCaptureCanvas.width = scannerVideo.videoWidth;
+                originalCaptureCanvas.height = scannerVideo.videoHeight;
+                originalCaptureCanvas.getContext('2d').drawImage(scannerVideo, 0, 0);
+                
+                scannerCanvas.width = scannerVideo.videoWidth;
+                scannerCanvas.height = scannerVideo.videoHeight;
+                sctx.drawImage(scannerVideo, 0, 0);
                 stopScanner();
             }
             detectAndCropFromCanvas();
@@ -435,18 +451,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 {x: 0, y: 0}, {x: scannerCanvas.width, y: 0},
                 {x: scannerCanvas.width, y: scannerCanvas.height}, {x: 0, y: scannerCanvas.height}
             ];
+            enterCropMode();
+        } else {
+            // Document successfully detected, skip manual intervention
+            applyManualCrop();
         }
-
-        enterCropMode();
     }
 
     function enterCropMode() {
         scanMode = 'crop';
+        
+        fullResCanvas.width = originalCaptureCanvas.width;
+        fullResCanvas.height = originalCaptureCanvas.height;
+        fullResCanvas.getContext('2d').drawImage(originalCaptureCanvas, 0, 0);
+        
+        scannerCanvas.width = fullResCanvas.width;
+        scannerCanvas.height = fullResCanvas.height;
         sctx.drawImage(fullResCanvas, 0, 0, scannerCanvas.width, scannerCanvas.height);
         
         cropUi.classList.remove('hidden');
         editGroup.classList.add('hidden');
         btnScannerCapture.innerHTML = '<i class="fa-solid fa-check"></i>';
+        btnScannerCapture.disabled = false;
+        
+        scannerCanvas.style.filter = 'none';
+        scannerCanvas.style.transform = 'none';
         
         // Setup crop points matching canvas aspect ratio to CSS layout
         updateCropUiFromCorners();
@@ -468,6 +497,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateCropUiFromCorners() {
         canvasRect = scannerCanvas.getBoundingClientRect();
+        const mainRect = scannerCanvas.parentElement.getBoundingClientRect();
+        cropUi.style.width = canvasRect.width + 'px';
+        cropUi.style.height = canvasRect.height + 'px';
+        cropUi.style.left = (canvasRect.left - mainRect.left) + 'px';
+        cropUi.style.top = (canvasRect.top - mainRect.top) + 'px';
+        
+        scannerTextLayer.style.width = canvasRect.width + 'px';
+        scannerTextLayer.style.height = canvasRect.height + 'px';
+        scannerTextLayer.style.left = (canvasRect.left - mainRect.left) + 'px';
+        scannerTextLayer.style.top = (canvasRect.top - mainRect.top) + 'px';
+
         // Convert internal coordinates to window % for points
         cropPoints.forEach((pt, i) => {
             let px = (rawCorners[i].x / scannerCanvas.width) * 100;
@@ -506,11 +546,11 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
             try {
                 // Scale corners to full image res
-                let scaleX = fullResCanvas.width / scannerCanvas.width;
-                let scaleY = fullResCanvas.height / scannerCanvas.height;
+                let scaleX = originalCaptureCanvas.width / scannerCanvas.width;
+                let scaleY = originalCaptureCanvas.height / scannerCanvas.height;
                 let c = rawCorners.map(pt => ({x: pt.x * scaleX, y: pt.y * scaleY}));
 
-                let src = cv.imread(fullResCanvas);
+                let src = cv.imread(originalCaptureCanvas);
                 let srcPts = cv.matFromArray(4, 1, cv.CV_32FC2, [c[0].x, c[0].y, c[1].x, c[1].y, c[2].x, c[2].y, c[3].x, c[3].y]);
                 
                 let w = Math.max(Math.hypot(c[2].x-c[3].x, c[2].y-c[3].y), Math.hypot(c[1].x-c[0].x, c[1].y-c[0].y));
@@ -532,9 +572,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Create Item
                 currentItem = {
                     dataUrl: scannerCanvas.toDataURL('image/jpeg', 0.9),
-                    filters: { brightness: 0, contrast: 100, darkness: 0 },
+                    filters: { brightness: 0, contrast: 100, darkness: 0, sharpness: 0 },
                     rotation: 0
                 };
+                scannerTextLayer.innerHTML = '';
 
                 scanMode = 'preview';
                 cropUi.classList.add('hidden');
@@ -559,21 +600,83 @@ document.addEventListener('DOMContentLoaded', () => {
         const b = sBrightness.value;
         const c = sContrast.value;
         const d = sDarkness.value;
+        const s = parseInt(sSharpness.value) || 0;
         
-        // Simulating darkness by reducing composite brightness and increasing contrast for shadows
         let finalBright = 100 + parseInt(b) - (parseInt(d)*0.5);
         let finalCont = parseInt(c) + (parseInt(d)*0.2);
 
-        scannerCanvas.style.filter = `brightness(${finalBright}%) contrast(${finalCont}%)`;
+        const sharpnessMatrix = document.getElementById('sharpness-matrix');
+        if (sharpnessMatrix) {
+            const amount = s / 100.0;
+            const center = 1 + (4 * amount);
+            const edge = -amount;
+            sharpnessMatrix.setAttribute('kernelMatrix', `0 ${edge} 0 ${edge} ${center} ${edge} 0 ${edge} 0`);
+        }
+
+        scannerCanvas.style.filter = s > 0 ? `url(#svg-sharpness) brightness(${finalBright}%) contrast(${finalCont}%)` : `brightness(${finalBright}%) contrast(${finalCont}%)`;
         const rotStr = `rotate(${currentItem.rotation}deg)`;
         scannerCanvas.style.transform = rotStr;
         
         currentItem.filters.brightness = b;
         currentItem.filters.contrast = c;
         currentItem.filters.darkness = d;
+        currentItem.filters.sharpness = s;
     }
 
-    [sBrightness, sContrast, sDarkness].forEach(el => el.addEventListener('input', applyScannerFilters));
+    [sBrightness, sContrast, sDarkness, sSharpness].forEach(el => el.addEventListener('input', applyScannerFilters));
+
+    btnScannerText.addEventListener('click', () => {
+        if(!currentItem) return;
+        const txt = prompt("Enter text to overlay: (Double click text later to remove it)");
+        if(!txt) return;
+        
+        const textEl = document.createElement('div');
+        textEl.className = 'scanner-text-display';
+        textEl.textContent = txt;
+        textEl.style.position = 'absolute';
+        textEl.style.left = '50%';
+        textEl.style.top = '50%';
+        textEl.style.color = '#ef4444';
+        textEl.style.fontWeight = 'bold';
+        textEl.style.fontSize = '1.5rem';
+        textEl.style.background = 'rgba(255,255,255,0.7)';
+        textEl.style.padding = '0.2rem 0.5rem';
+        textEl.style.borderRadius = '4px';
+        textEl.style.pointerEvents = 'auto';
+        textEl.style.cursor = 'move';
+        textEl.style.transform = 'translate(-50%, -50%)';
+        textEl.style.border = '2px dashed #000';
+        
+        let isDragging = false, startX, startY, origLeft, origTop;
+        const onDown = (e) => {
+            isDragging = true;
+            startX = e.clientX || e.touches[0].clientX;
+            startY = e.clientY || e.touches[0].clientY;
+            origLeft = parseFloat(textEl.style.left) || 50;
+            origTop = parseFloat(textEl.style.top) || 50;
+            e.preventDefault();
+        };
+        const onMove = (e) => {
+            if(!isDragging) return;
+            const cx = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+            const cy = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+            const dx = (cx - startX) / scannerCanvas.clientWidth * 100;
+            const dy = (cy - startY) / scannerCanvas.clientHeight * 100;
+            textEl.style.left = `${origLeft + dx}%`;
+            textEl.style.top = `${origTop + dy}%`;
+        };
+        const onUp = () => isDragging = false;
+        
+        textEl.addEventListener('mousedown', onDown);
+        textEl.addEventListener('touchstart', onDown);
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('touchmove', onMove, {passive:false});
+        window.addEventListener('mouseup', onUp);
+        window.addEventListener('touchend', onUp);
+
+        textEl.addEventListener('dblclick', () => textEl.remove());
+        scannerTextLayer.appendChild(textEl);
+    });
 
     btnScannerRotLeft.addEventListener('click', () => { if(currentItem) { currentItem.rotation -= 90; applyScannerFilters(); } });
     btnScannerRotRight.addEventListener('click', () => { if(currentItem) { currentItem.rotation += 90; applyScannerFilters(); } });
@@ -602,7 +705,8 @@ document.addEventListener('DOMContentLoaded', () => {
         sctx.clearRect(0, 0, scannerCanvas.width, scannerCanvas.height);
         
         currentItem = null;
-        sBrightness.value = 0; sContrast.value = 100; sDarkness.value = 0;
+        sBrightness.value = 0; sContrast.value = 100; sDarkness.value = 0; sSharpness.value = 0;
+        scannerTextLayer.innerHTML = '';
         
         btnScannerSavePdf.disabled = false;
         
@@ -613,10 +717,27 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function bakeItem(item) {
+        let mat = cv.imread(fullResCanvas);
+        const s = parseInt(sSharpness.value) || 0;
+        if(s > 0) {
+            let kernel = new cv.Mat(3, 3, cv.CV_32F);
+            let amount = s / 100.0;
+            let center = 1 + (4 * amount);
+            let edge = -amount;
+            kernel.data32F.set([0, edge, 0, edge, center, edge, 0, edge, 0]);
+            let dst = new cv.Mat();
+            cv.filter2D(mat, dst, -1, kernel, new cv.Point(-1, -1), 0, cv.BORDER_DEFAULT);
+            mat.delete();
+            kernel.delete();
+            mat = dst;
+        }
+
+        const sharpCanvas = document.createElement('canvas');
+        cv.imshow(sharpCanvas, mat);
+        mat.delete();
+
         // Draw to temp canvas with filters and rotation
         const copyCvs = document.createElement('canvas');
-        const img = new Image();
-        img.src = fullResCanvas.toDataURL('image/jpeg', 1.0);
         
         const b = item.filters.brightness;
         const c = item.filters.contrast;
@@ -636,9 +757,33 @@ document.addEventListener('DOMContentLoaded', () => {
         xctx.translate(copyCvs.width/2, copyCvs.height/2);
         xctx.rotate(item.rotation * Math.PI / 180);
         xctx.filter = `brightness(${finalBright}%) contrast(${finalCont}%)`;
-        xctx.drawImage(img, -fullResCanvas.width/2, -fullResCanvas.height/2);
+        xctx.drawImage(sharpCanvas, -fullResCanvas.width/2, -fullResCanvas.height/2);
         
-        return copyCvs.toDataURL('image/jpeg', 0.9);
+        // Draw Text Layer properly mapped
+        const texts = scannerTextLayer.querySelectorAll('.scanner-text-display');
+        texts.forEach(tEl => {
+            const percX = parseFloat(tEl.style.left);
+            const percY = parseFloat(tEl.style.top);
+            let x = (percX / 100) * fullResCanvas.width - (fullResCanvas.width/2);
+            let y = (percY / 100) * fullResCanvas.height - (fullResCanvas.height/2);
+            
+            // Reapply relative scaling
+            let scaleRatio = fullResCanvas.width / scannerCanvas.clientWidth;
+            let fontSize = 24 * scaleRatio;
+            
+            xctx.font = `bold ${fontSize}px Inter, sans-serif`;
+            let txt = tEl.textContent;
+            let w = xctx.measureText(txt).width;
+            
+            xctx.fillStyle = 'rgba(255,255,255,0.7)';
+            // draw rect centered
+            xctx.fillRect(x - w/2 - (5*scaleRatio), y - fontSize, w + (10*scaleRatio), fontSize + (10*scaleRatio));
+            
+            xctx.fillStyle = '#ef4444'; 
+            xctx.fillText(txt, x - w/2, y);
+        });
+
+        return copyCvs.toDataURL('image/jpeg', 0.95);
     }
 
     function updateScannerThumbnails() {
